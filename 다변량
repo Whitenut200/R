@@ -1,0 +1,76 @@
+# 데이터 불러오기
+data=read.csv("C:/Users/m/Desktop/happiness.csv")
+data
+attach(data)
+
+# 변수 생성하기
+X1=data[,7] # Logged GDP per capita
+X2=data[,8] # Social support
+X3=data[,9] # Healthy life expectancy
+X4=data[,10] # Freedom to make life choices
+X5=data[,11] # Generosity
+X6=data[,12] # Perceptions of corruption
+X1;X2;X3;X4;X5;X6;
+
+happiness=cbind(X1,X2,X3,X4,X5,X6)
+happiness
+
+# 기초통계량
+summary(happiness)
+sd(X1);sd(X2);sd(X3);sd(X4);sd(X5);sd(X6);
+
+# 기초통계량 관련 그림 (상자그림) [그림 2.2]
+boxplot(X1)
+boxplot(X3)
+boxplot(X2,X4,X5,X6)
+
+# 상관계수
+cor=round(cor(happiness),2)
+
+# 상관분석 관련 그림
+corrplot(cor) # 상관도  [그림 3.1.1]
+pairs(~X1+X2+X3+X4+X5+X6, data=happiness,lower.panel=panel.smooth,pch=20,main="행복지수에 대한 상관행렬도")   # 상관행렬도  [그림 3.1.2]
+
+# 주성분 분석
+H_cor=princomp(cor, cor=TRUE)
+summary(H_cor)
+H_cor$loadings
+
+# 주성분 분석 관련 그림
+library(graphics)
+screeplot(H_cor,npcs=6, type="line", main="scree plot-cor") #스크리 그래프 [그림 3.2.1]
+biplot(H_cor) # 주성분 그래프 [그림 3.2.2]
+
+#군집분석
+<관련 함수 생성>
+ccent=function(y,c1){
+  f=function(i){ colMeans(y[c1==i,])}
+  x=sapply(sort(unique(c1)),f)
+  colnames(x)=sort(unique(c1))
+  return(x)
+}
+
+<적절한 군집 수 분석>
+library(mclust)
+x=happiness
+happiness_mc=Mclust(x,2:5)
+attributes(happiness_mc)
+happiness_mc$classification
+
+<군집 분석>
+happiness_k=kmeans(x,centers=3)
+fviz_cluster(happiness_k, geom="point")+ggtitle("k=3")
+happiness_k$cluster
+clus=cbind(data[,1],x,happiness_k$cluster)
+clus1=clus[(clus[,8]==1),]  # 군집 1
+clus2=clus[(clus[,8]==2),]  # 군집 2
+clus3=clus[(clus[,8]==3),]  # 군집 3
+table(happiness_k$cluster) # 각 군집의 개수
+
+round(ccent(happiness,happiness_k$cluster),3) # 군집 별 평균값 (세 번째 자리 반올림)
+
+
+
+plot(x,pch=happiness_mc$classification, col=happiness_mc$classification, main="군집의 수 시각화")
+boxplot(ccent(happiness,happiness_k$cluster),main="군집별 상자그림")
+plot(happiness_mc,what="classification",main="군집 결과 시각화") # 군집 결과 시각화

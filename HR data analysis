@@ -1,0 +1,803 @@
+rm(list = ls())
+source('C:/Users/my/Desktop/두루미/1주차/EDA/descriptive_analytics_utils.R')
+
+# data 가져오기
+hr.df <- read.csv("C:/Users/my/Desktop/HR_comma_sep.csv", header = TRUE, sep = ",")
+
+# data.frame 확인
+class(hr.df)
+
+# data 확인
+head(hr.df)
+
+# dataset에 대한 정보
+str(hr.df)
+
+
+
+# 결측값이 있는가 확인
+sum(is.na(hr.df))
+
+# 결측값이 있는 행 제거 후 dataset 확인
+sum(complete.cases(hr.df))
+
+# factor형으로 바꿀 변수 선택
+categorical.vars <- c( 'Department', 'salary', 'Work_accident', 'left', 'promotion_last_5years')
+
+
+# data type 바꾸기
+hr.df <- to.factors(df = hr.df, variables = categorical.vars)
+
+# 바뀐 dataset에 대한 정보 확인
+str(hr.df)
+
+
+
+## Data analysis
+
+#load dependencies
+library(car)
+# dataset의 변수들을 바로 사용할 수 있도록 만들기
+attach(hr.df)
+
+
+## 범주형
+
+# left stats
+# A dummy variable-1: leave, 0: not leave
+get.categorical.variable.stats(left)
+
+# left 시각화
+visualize.barchart(left)
+
+# Work_accident stats and bar chart
+# A dummy variable assessing whether(1) or not (0) they had an accident
+get.categorical.variable.stats(Work_accident) #사고 없는 경우 대부분
+visualize.barchart(Work_accident)
+
+# contingency table and mosaic plot
+get.contingency.table(left, Work_accident, stat.tests = T)
+#H0:Work_accident와 left 사이의 연관성이 없다.
+#H1:Work_accident와 left 사이의 연관성이 있다.
+# fisher test 통해 구한 p-값 0.0005가 유의수준 0.05보다 매우 작으므로 귀무가설 기각.
+#따라서 Work_accident와 left 사이의 연관성이 있다.
+# chisq test 통해 구한 p-값이 유의수준 0.05보다 매우 작으므로 귀무가설 기각.
+#따라서 Work_accident와 left 사이의 연관성이 있다.
+visualize.contingency.table(left, Work_accident)
+
+
+# promotion_last_5years stats and bar chart
+# 1: promoted, 0: not promoted
+get.categorical.variable.stats(promotion_last_5years)
+visualize.barchart(promotion_last_5years)
+
+# contingency table and mosaic plot
+get.contingency.table(left, promotion_last_5years, stat.tests = T)
+visualize.contingency.table(left, promotion_last_5years)
+#H0:promotion_last_5years와 left 사이의 연관성이 없다.
+#H1:promotion_last_5years와 left 사이의 연관성이 있다.
+# fisher test 통해 구한 p-값 0.0005가 유의수준 0.05보다 매우 작으므로 귀무가설 기각.
+#따라서 promotion_last_5years와 left 사이의 연관성이 있다.
+# chisq test 통해 구한 p-값이 유의수준 0.05보다 매우 작으므로 귀무가설 기각.
+#따라서 promotion_last_5years와 left 사이의 연관성이 있다.
+
+## Department stats and bar chart
+get.categorical.variable.stats(Department)
+visualize.barchart(Department)
+
+# sales,support, technical에서 특히 분포가 많음 
+
+#left 수로 보기. 전체데이터 말고
+library(dplyr)
+ff <- hr.df%>%filter(hr.df$left==1)
+gg <- hr.df%>%filter(hr.df$left==0)
+hist(as.numeric(ff$Department))
+#plot2
+library(dplyr)
+ff <- hr.df%>%filter(hr.df$left==1)
+gg <- hr.df%>%filter(hr.df$left==0)
+hist(as.numeric(ff$Department))
+dp_data <- ff%>% group_by(left,Department) %>% summarise(total = n())
+attach(dp_data)
+dp_data_1 <- dp_data%>% group_by(left) %>% mutate(percent = round((total / sum(total)),3))
+dp_data_1
+dp_data2 <- gg%>% group_by(left,Department) %>% summarise(total = n())
+attach(dp_data)
+dp_data_2 <- dp_data2%>% group_by(left) %>% mutate(percent = round((total / sum(total)),3))
+dp_data_2
+df=rb
+
+#비율계산: left한 사원들 중 부서별 비율
+dp_data <- hr.df %>% group_by(left,Department) %>% summarise(total = n())
+dp_data_1 <- dp_data%>% group_by(left) %>% mutate(percent = total / sum(total))
+dp_data_1
+dp_data%>% group_by(Department)
+#test
+fisher.test(left,Department, simulate.p.value=TRUE)
+chisq.test(left,Department)
+# left와 Department 사이의 연관성이 있다.
+visualize.contingency.table(left,Department)
+
+#accounting:회계, HR:인사, IT, managemet: 경영, marketing, sales 영업:
+#Prouduct_mng:생산관리, RandD:연구개발, support:지원, technical:기술
+#IT 부서는 회사 내 컴퓨터 네트워크 시스템의 설치 및 유지 관리를 감독
+
+## salary stats and bar chart
+# 3개의 범주(low, medium, high)
+
+hr.df$salary <- factor(hr.df$salary, levels=c("high","medium","low"))
+levels(hr.df$salary)
+library(vcd)
+c <- with(hr.df,table(left, salary))
+c
+mosaic(c, direction = "v")
+
+attach(hr.df)
+
+get.categorical.variable.stats(salary) # salary 빈도표
+
+visualize.barchart(salary) # salary 히스토그램
+# low가 가장 많고 high의 개수가 적다.
+
+# fisher/chisq test and mosaic plot #low, medium, high 순서 바꾸기 지정으로 factor
+fisher.test(left, salary, simulate.p.value=TRUE)
+# H0:left와 salary 사이의 연관성이 없다.
+# H1:left와 salary 사이의 연관성이 있다.
+# fisher.test (p=0.0005<0.05, 귀무가설 기각,
+#left와 salary 사이의 연관성이 있다.
+chisq.test(left, salary)
+# chisq.test (p<0.050.05, 귀무가설 기각,
+#left와 salary 사이의 연관성이 있다.
+
+visualize.contingency.table(left, salary)
+# high에서 left 1의 비율이 적고 low에서 left 1의 비율이 크다.
+# 즉 급여가 높으면 퇴사할 비율이 적고 급여가 낮으면 퇴사할 비율이 크다.
+# 퇴사를 하지 않는 부분을 보면 급여가 low와 medium의 비율은 거의 같아지면 
+# 급여가 높으면(high)이면 상대적으로 비율이 적음을 알 수 있다.
+#salary factor 순서 변경
+
+###### 연속형###########
+library(ggplot2)
+# number_project stats and bar chart
+# 근로자가 일하는동안 한 프로젝트 수
+get.numeric.variable.stats(number_project)
+
+# histogram\density plot
+ggplot(hr.df,aes(x=number_project))+geom_histogram(binwidth=0.5)
+d<-density(number_project)
+plot(d)
+ggplot(hr.df, aes(x = number_project, fill = left)) + geom_histogram(bins=6,alpha=0.7)
+
+# box plot
+p<-ggplot(hr.df, aes(x=left, y=number_project, fill=left)) +
+  geom_boxplot()
+p + geom_jitter(shape=1, alpha=0.3, position=position_jitter(0.2))
+
+
+## time_spend_company stats and bar chart
+## 근속연수
+get.numeric.variable.stats(time_spend_company)
+
+# histogram\density plot
+ggplot(hr.df,aes(x=time_spend_company))+geom_histogram(binwidth=0.5)
+d<-density(time_spend_company)
+plot(d)
+ggplot(hr.df, aes(x = time_spend_company, fill = left)) + geom_histogram(bins=9,alpha=0.7)
+
+
+# box plot
+p<-ggplot(hr.df, aes(x=left, y=time_spend_company, fill=left)) +
+  geom_boxplot()
+p + geom_jitter(shape=1, alpha=0.3, position=position_jitter(0.2))
+
+#연수 평균이 높을수록 퇴사 비율 높음. 퇴사하지 않은 직원의 꼬리가 김
+
+## satisfaction_level analysis
+# 직원들의 만족도 (0 to 1)
+get.numeric.variable.stats(satisfaction_level)
+
+# histogram\density plot
+ggplot(hr.df,aes(x=satisfaction_level))+geom_histogram(binwidth=0.1)
+d<-density(satisfaction_level)
+plot(d)
+ggplot(hr.df, aes(x = satisfaction_level, fill = left)) + geom_histogram(bins=10,alpha=0.7)
+
+# box plot
+p<-ggplot(hr.df, aes(x=left, y=satisfaction_level, fill=left)) +
+  geom_boxplot()
+p + geom_jitter(shape=1, alpha=0.3, position=position_jitter(0.2))
+
+
+#만족 수준이 낮을수록 퇴사하는 사람들이 많음을 알 수 있음
+
+## last_evaluation
+# 매니저의 평가(0 to 1)
+get.numeric.variable.stats(last_evaluation)
+# 최대 1, 최소 0.36, 평균 0.72
+
+# histogram\density plot
+ggplot(hr.df,aes(x=last_evaluation))+geom_histogram(binwidth=0.1)
+d<-density(last_evaluation)
+plot(d)
+ggplot(hr.df, aes(x = last_evaluation, fill = left)) + geom_histogram(bins=10,alpha=0.7)
+
+
+#퇴사한 직원이 낮은 점수를, 높은 점수를 받기도함
+
+# box plot
+p<-ggplot(hr.df, aes(x=left, y=last_evaluation, fill=left)) +
+  geom_boxplot()
+p + geom_jitter(shape=1, alpha=0.3, position=position_jitter(0.2))
+
+#퇴사한 직원들의 평가 점수 범위가 넓음
+
+##average_monthly_hours
+
+# average_montly_hours analysis
+# 한달동안 일한 시간
+get.numeric.variable.stats(average_montly_hours)
+# 최대 310, 최소 96, 평균 201.05
+
+# histogram\density plot
+ggplot(hr.df,aes(x=average_montly_hours))+geom_histogram(binwidth=0.5)
+d<-density(average_montly_hours)
+plot(d)
+ggplot(hr.df, aes(x = average_montly_hours, fill = left)) + geom_histogram(bins=10,alpha=0.7)
+
+
+# box plot
+p<-ggplot(hr.df, aes(x=left, y=average_montly_hours, fill=left)) +
+  geom_boxplot()
+p + geom_jitter(shape=1, alpha=0.3, position=position_jitter(0.2))
+
+## 정규화 
+# satisfaction_level, last_evaluation, average_monthly_hours, number_project,time_spend_company
+#다섯개의 연속형 변수
+# 서로 범위가 다르므로 정규화 실시 #다른 func 확인 scale
+scale.features <- function(df, variables){
+  for (variable in variables){
+    df[[variable]] <- scale(df[[variable]], center=T, scale=T)
+  }
+  return(df)
+}
+
+# normalize variables
+attach(hr.df)
+numeric.vars <- c("satisfaction_level", "last_evaluation", "average_montly_hours",
+                  "number_project","time_spend_company")
+hr.df <- scale.features(hr.df, numeric.vars)
+attach(hr.df)
+
+##### 연속형-연속형 상관성############
+hr.df_cor=cor(hr.df[,c(1:5)])
+par(mfcol=c(1,1))
+library(corrplot)
+col <- colorRampPalette(c("#BB4444", "#EE9988", "#FFFFFF", "#77AADD", "#4477AA"))
+corrplot(hr.df_cor, method="shade", shade.col=NA, tl.col="black", tl.srt=45,
+         col=col(200), addCoef.col="black", order="AOE")
+#공선성 X
+
+########로지스틱(LR)###########
+attach(hr.df)
+library(caret) # model training and evaluation
+library(ROCR) # model evaluation
+source("C:/Users/my/Desktop/두루미/1주차/ModelComparison/performance_plot_utils.R") #plotting metric results
+#data 60%로 train data, 나머지로 test data
+indexes <- sample(1:nrow(hr.df), size=0.6*nrow(hr.df))
+train.data <- hr.df[indexes,]
+test.data <- hr.df[-indexes,]
+
+## separate feature and class variables
+#종속변수 제외, 포함 var
+test.feature.vars <- test.data[,-7]
+test.class.var <- test.data[,7]
+
+# build a logistic regression model
+#모든 변수에 대해 돌려보기.
+formula.init <- "left ~ ."
+formula.init <- as.formula(formula.init)
+lr.model <- glm(formula=formula.init, data=train.data, family="binomial")
+
+# view model details
+summary(lr.model)
+
+# perform and evaluate predictions#평가
+lr.predictions <- predict(lr.model, test.data, type="response")
+lr.predictions <- as.factor(round(lr.predictions)) ##
+confusionMatrix(data=lr.predictions, reference=test.class.var, positive='1')
+#auc plot
+lr.prediction.values <- predict(lr.model, test.feature.vars, type="response")
+predictions <- prediction(lr.prediction.values, test.class.var)
+par(mfrow=c(1,2))
+plot.roc.curve(predictions, title.text="LR ROC Curve")
+plot.pr.curve(predictions, title.text="LR Precision/Recall Curve")
+
+
+## glm specific feature selection
+formula <- "left ~ ."
+formula <- as.formula(formula)
+control <- trainControl(method="repeatedcv", number=10, repeats=2)
+model <- train(formula, data=hr.df, method="glm", 
+               trControl=control)
+importance <- varImp(model, scale=FALSE)
+plot(importance)
+
+
+# build new model with selected features
+formula.new <- "left ~ satisfaction_level +time_spend_company +  Work_accident + salary +number_project"
+formula.new <- as.formula(formula.new)
+lr.model.new <- glm(formula=formula.new, data=hr.df, family="binomial")
+
+# view model details
+summary(lr.model.new)
+
+# perform and evaluate predictions 
+lr.predictions.new <- predict(lr.model.new, test.data, type="response") 
+lr.predictions.new <- as.factor(round(lr.predictions.new)) ##
+confusionMatrix(data=lr.predictions.new, reference=test.class.var, positive='1')
+
+## model performance evaluations
+
+# plot best model evaluation metric curves
+#best model
+lr.model.best <- lr.model.new
+lr.prediction.values <- predict(lr.model.best, test.feature.vars, type="response")
+predictions <- prediction(lr.prediction.values, test.class.var)
+par(mfrow=c(1,2))
+plot.roc.curve(predictions, title.text="LR ROC Curve")
+plot.pr.curve(predictions, title.text="LR Precision/Recall Curve")
+
+#=============================================================== 
+#=== SVM =============================================
+#===============================================================
+# 데이터 전체 60% 가지고 train/test data 만들기
+indexes <- sample(1:nrow(hr.df), size=0.6*nrow(hr.df))
+train.data <- hr.df[indexes,]
+test.data <- hr.df[-indexes,]
+
+library(e1071) # svm model
+library(caret) # model training\optimizations
+library(kernlab) # svm model for hyperparameters
+library(ROCR) # model evaluation
+library(hexbin)
+source("C:/Users/user/Desktop/performance_plot_utils.R") # plot model metrics
+
+## separate feature and class variables
+# 종속변수를 제외한 var 만들기
+test.feature.vars <- test.data[,-7] 
+test.class.var <- test.data[,7] 
+
+## build initial model with training data
+# 전체 변수가 들어간 initial model 만들기
+formula.init <- "left ~ ." 
+# formula형태로 input값을 변환
+formula.init <- as.formula(formula.init) 
+# svm 모형적합
+# kernal:훈련과 예측에 사용되는 커널, 실제 문제에서는 큰 영향이 없다
+# gamma : 초평면의 기울기
+# cost : 과적합을 막는 정도
+svm.model <- svm(formula=formula.init, data=train.data, 
+                 kernel="radial", cost=100, gamma=1)
+
+## view inital model details
+# svm()함수로 모형적합 시킨 summary
+summary(svm.model)
+
+## predict and evaluate results
+# predict 함수:svm.model은 svm의 객체, test.feature.vars는 새로운 입력 데이터를 포함하는 객체 
+svm.predictions <- predict(svm.model, test.feature.vars)
+# ConfusionMatirx(혼돈행렬) 
+# svm.predictions : 예측값 factor 벡터
+# test.class.var : 실제값 factor 벡터
+confusionMatrix(data=svm.predictions, reference=test.class.var, positive="1")
+
+## svm specific feature selection
+formula.init <- "left ~ ."
+formula.init <- as.formula(formula.init)
+# trainControl() : 일괄된 비교방법을 각 후보에게 통일되게 적용
+# 샘플링방법=반복교차검증 / 교차검증 갯수=10 / 반복 교차 검증에서의 전체 반복 횟수=2
+control <- trainControl(method="repeatedcv", number=10, repeats=2)
+# 예측 모델을 훈련
+model <- train(formula.init, data=train.data, method="svmRadial", 
+               trControl=control)
+# variables of importance
+importance <- varImp(model, scale=FALSE)
+# plot에서 상위 5개 변수 select
+plot(importance, cex.lab=0.5) 
+
+## build new model with selected features
+# varimp를 참고한 변수를 통한 새로운 모델 생성 
+formula.new <- "left ~ satisfaction_level + time_spend_company +
+                            salary + Work_accident +
+                            number_project"             
+formula.new <- as.formula(formula.new)
+# svm 모형적합
+svm.model.new <- svm(formula=formula.new, data=train.data, 
+                     kernel="radial", cost=10, gamma=0.25)
+
+## predict results with new model on test data
+svm.predictions.new <- predict(svm.model.new, test.feature.vars)
+
+## new model performance evaluation
+# ConfusionMatirx(혼돈행렬) 
+confusionMatrix(data=svm.predictions.new, reference=test.class.var, positive="1")
+
+## hyperparameter optimizations
+
+# run grid search
+cost.weights <- c(0.1, 10, 100)
+gamma.weights <- c(0.01, 0.25, 0.5, 1)
+# 다양한 cost.weights, gamma.weights 값에 따른 CV를 적용
+tuning.results <- tune(svm, formula.new, 
+                       data = train.data, kernel="radial", 
+                       ranges=list(cost=cost.weights, gamma=gamma.weights))
+
+# view optimization results
+print(tuning.results)
+
+# plot results
+plot(tuning.results, cex.main=0.6, cex.lab=0.8,xaxs="i", yaxs="i") #그림1 
+
+# get best model and evaluate predictions
+svm.model.best = tuning.results$best.model
+svm.predictions.best <- predict(svm.model.best, test.feature.vars)
+# ConfusionMatirx(혼돈행렬) 
+confusionMatrix(data=svm.predictions.best, reference=test.class.var, positive="1")
+
+# plot best model evaluation metric curves
+svm.predictions.best <- predict(svm.model.best, test.feature.vars, decision.values = T)
+# 부여된 속성들 모두 한번에 확인
+svm.prediction.values <- attributes(svm.predictions.best)$decision.values
+predictions <- prediction(svm.prediction.values, test.class.var)
+par(mfrow=c(1,2))
+plot.roc.curve(predictions, title.text="SVM ROC Curve")
+plot.pr.curve(predictions, title.text="SVM Precision/Recall Curve") #그림2 
+
+## model optimizations based on ROC
+# ROC 기반 모델 최적화
+
+# data transformation
+transformed.train <- train.data
+transformed.test <- test.data
+for (variable in categorical.vars){
+  new.train.var <- make.names(train.data[[variable]])
+  transformed.train[[variable]] <- new.train.var
+  new.test.var <- make.names(test.data[[variable]])
+  transformed.test[[variable]] <- new.test.var
+}
+transformed.train <- to.factors(df=transformed.train, variables=categorical.vars)
+transformed.test <- to.factors(df=transformed.test, variables=categorical.vars)
+# 종속변수를 제외한 var 만들기
+transformed.test.feature.vars <- transformed.test[,-7] 
+transformed.test.class.var <- transformed.test[,7] 
+
+# view data to understand transformations
+summary(transformed.train$left) 
+
+# build optimal model based on AUC
+# AUC 기반 최적 모델 구축
+
+# 모든 벡터의 조합을 빠르게 만들어 줌
+grid <- expand.grid(C=c(1,10,100), 
+                    sigma=c(0.01, 0.05, 0.1, 0.5, 1))
+# 샘플링방법=교차검증 / 교차검증 갯수=10 
+ctr <- trainControl(method='cv', number=10,
+                    classProbs=TRUE,
+                    summaryFunction=twoClassSummary)
+svm.roc.model <- train(formula.init, transformed.train,
+                       method='svmRadial', trControl=ctr, 
+                       tuneGrid=grid, metric="ROC")
+
+# predict and evaluate model performance
+predictions <- predict(svm.roc.model, transformed.test.feature.vars)
+# ConfusionMatirx(혼돈행렬) 
+confusionMatrix(predictions, transformed.test.class.var, positive = "X1")
+
+## plot model evaluation metric curves
+svm.predictions <- predict(svm.roc.model, transformed.test.feature.vars, type="prob")
+svm.prediction.values <- svm.predictions[,2]
+predictions <- prediction(svm.prediction.values, test.class.var)
+par(mfrow=c(1,2))
+# ROC Cure
+plot.roc.curve(predictions, title.text="SVM ROC Curve")
+plot.pr.curve(predictions, title.text="SVM Precision/Recall Curve")  #그림3 
+
+#=============================================================== 
+#=== Decision tree classifier =============================================
+#===============================================================
+
+#train.data/test.data 만들기 (전체의 60%)
+indexes <- sample(1:nrow(hr.df), size=0.6*nrow(hr.df))
+train.data <- hr.df[indexes,]
+test.data <- hr.df[-indexes,]
+
+
+library(rpart)# tree models 
+library(caret) # feature selection
+library(rpart.plot) # plot dtree
+library(ROCR) # model evaluation
+library(e1071) # tuning model
+source("C:/Users/user/Desktop/과제/다변량/실습/ModelComparison/ModelComparison/performance_plot_utils.R") # plotting curves # plotting curves
+
+## separate feature and class variables
+# 종속변수 없앤 데이터 만들기
+test.feature.vars <- test.data[,-7]
+test.class.var <- test.data[,7]
+
+## build initial model with training data
+# 전체 변수가 들어간 모델 만들기
+formula.init <- "left ~ ."
+# "left~ ." 공식화 하기
+formula.init <- as.formula(formula.init)
+# dt.model$cptable  적당한 cp 값 설정/minsplit: 최소데이터 수
+dt.model <- rpart(formula=formula.init, method="class",data=train.data, 
+                  control = rpart.control(minsplit=10, cp=0.05))
+
+## predict and evaluate results
+# 만든 모델 예측수행 (test.feature.vars 사용)-test.data에 종속변수 제거 데이터
+# 각 분류에 속할 클래스를 예측(type = "class")
+dt.predictions <- predict(dt.model, test.feature.vars, type="class")
+# evaluate results 구하기
+confusionMatrix(data=dt.predictions, reference=test.class.var, positive="1")
+str(hr.df)
+
+# 만든 모델 예측 (AUC 구하기)
+dt.predictions2 <- predict(dt.model, test.feature.vars, type="prob")
+dt.prediction.values <- dt.predictions2[,2]
+# test.class.var을 가지고 예측
+predictions <- prediction(dt.prediction.values, test.class.var)
+par(mfrow=c(1,2))
+# ROC 커브 (AUC:0.96)
+plot.roc.curve(predictions, title.text="DT ROC Curve")
+plot.pr.curve(predictions, title.text="DT Precision/Recall Curve")
+
+
+
+## dt specific feature selection
+formula.init <- "left ~ ."
+formula.init <- as.formula(formula.init)
+# 일관된 비교방법을 통일되게 적용하여 평가
+# k(number)-fold cross-validation을 2(repeats)번 반복
+# k(number)-fold cross-validation: number 만큼의 fold를 만들어 examples 나눔
+control <- trainControl(method="repeatedcv", number=10, repeats=2)
+# 예측모델(formula.init) 훈련
+model <- train(formula.init, data=train.data, method="rpart", 
+               trControl=control)
+# 중요도 계산
+importance <- varImp(model, scale=FALSE)
+# 시각화
+plot(importance, cex.lab=0.5)
+
+
+## build new model with selected features
+# 중요도를 보고 변수 추출 => 새로운 모델 생성
+formula.new <- "left ~ satisfaction_level+average_montly_hours+time_spend_company+last_evaluation+number_project"
+formula.new <- as.formula(formula.new)
+dt.model.new <- rpart(formula=formula.new, method="class",data=train.data, 
+                      control = rpart.control(minsplit=10,cp=0.05),
+                      parms = list(prior = c(0.7, 0.3)))
+
+## predict and evaluate results
+# 각 분류에 속할 클래스를 예측(type = "class")
+dt.predictions.new <- predict(dt.model.new, test.feature.vars, type="class")
+# evaluate results 구하기
+confusionMatrix(data=dt.predictions.new, reference=test.class.var, positive="1")
+# Accuracy,Sensitivity,Specificity 값이 오름
+
+
+# view model details
+# dt.model.new를 최종모델로 결정
+dt.model.best <- dt.model.new
+print(dt.model.best)
+par(mfrow=c(1,1))
+# 의사결정나무 
+prp(dt.model.new, type=1, extra=3, varlen=0, faclen=0)
+
+
+## plot model evaluation metric curves
+# 각 분류에 속한 확률를 예측(type = "prob")
+dt.predictions.best <- predict(dt.model.best, test.feature.vars, type="prob")
+dt.prediction.values <- dt.predictions.best[,2]
+# test.class.var을 가지고 예측
+predictions <- prediction(dt.prediction.values, test.class.var)
+par(mfrow=c(1,2))
+# ROC 커브 (AUC:0.96)
+plot.roc.curve(predictions, title.text="DT ROC Curve")
+plot.pr.curve(predictions, title.text="DT Precision/Recall Curve")
+
+# 60:40 비율로 training and test datasets 나누기
+indexes <- sample(1:nrow(hr.df), size=0.6*nrow(hr.df))
+train.data <- hr.df[indexes,]
+test.data <- hr.df[-indexes,]
+
+#=============================================================== 
+#===RF=============================================
+#===============================================================
+
+#install.packages("randomForest")
+library(randomForest) #rf model
+library(caret) # feature selection
+library(e1071) # model tuning
+library(ROCR) # model evaluation
+source("performance_plot_utils.R") # plot curves
+## separate feature and class variables
+test.feature.vars <- test.data[,-7]
+test.class.var <- test.data[,7]
+
+## build initial model with training data
+formula.init <- "left ~ ."
+formula.init <- as.formula(formula.init)
+rf.model <- randomForest(formula.init, data = train.data, importance=T, proximity=T)
+
+## view model details
+print(rf.model)
+
+## predict and evaluate results
+rf.predictions <- predict(rf.model, test.feature.vars, type="class")
+confusionMatrix(data=rf.predictions, reference=test.class.var, positive="1")
+
+
+## build new model with selected features
+formula.new <- "left ~ satisfaction_level+number_project+time_spend_company+average_montly_hours+last_evaluation"
+formula.new <- as.formula(formula.new)
+rf.model.new <- randomForest(formula.new, data = train.data, 
+                             importance=T, proximity=T)
+
+## predict and evaluate results
+rf.predictions.new <- predict(rf.model.new, test.feature.vars, type="class")
+confusionMatrix(data=rf.predictions.new, reference=test.class.var, positive="1")
+
+
+## hyperparameter optimizations
+
+# run grid search
+nodesize.vals <- c(2, 3, 4, 5)
+ntree.vals <- c(200, 500, 1000, 2000)
+tuning.results <- tune.randomForest(formula.new, 
+                                    data = train.data,
+                                    mtry=3, 
+                                    nodesize=nodesize.vals,
+                                    ntree=ntree.vals)
+
+print(tuning.results)
+
+# get best model and predict and evaluate performance 
+rf.model.best <- tuning.results$best.model
+rf.predictions.best <- predict(rf.model.best, test.feature.vars, type="class")
+confusionMatrix(data=rf.predictions.best, reference=test.class.var, positive="1")
+
+
+## plot model evaluation metric curves (full model)
+rf.predictions.best <- predict(rf.model, test.feature.vars, type="prob")
+rf.prediction.values <- rf.predictions.best[,2]
+predictions <- prediction(rf.prediction.values, test.class.var)
+par(mfrow=c(1,2))
+plot.roc.curve(predictions, title.text="RF ROC Curve")
+plot.pr.curve(predictions, title.text="RF Precision/Recall Curve")
+
+
+## plot model evaluation metric curves (select 5)
+rf.predictions.best <- predict(rf.model.new, test.feature.vars, type="prob")
+rf.prediction.values <- rf.predictions.best[,2]
+predictions <- prediction(rf.prediction.values, test.class.var)
+par(mfrow=c(1,2))
+plot.roc.curve(predictions, title.text="RF ROC Curve")
+plot.pr.curve(predictions, title.text="RF Precision/Recall Curve")
+
+
+## plot model evaluation metric curves (model 3)
+rf.predictions.best <- predict(rf.model.best, test.feature.vars, type="prob")
+rf.prediction.values <- rf.predictions.best[,2]
+predictions <- prediction(rf.prediction.values, test.class.var)
+par(mfrow=c(1,2))
+plot.roc.curve(predictions, title.text="RF ROC Curve")
+plot.pr.curve(predictions, title.text="RF Precision/Recall Curve")
+
+
+#=============================================================== 
+#=== NN classifier =============================================
+#===============================================================
+library(caret)
+library(ROCR)
+setwd('C:/Users/Kim/Desktop/다변량/ModelComparison')
+source("performance_plot_utils.R")
+
+# 데이터 변형 (종속변수 제외)
+test.feature.vars <- test.data[,-7]
+test.class.var <- test.data[,7]
+
+# 데이터 변형
+transformed.train <- train.data
+transformed.test <- test.data
+for (variable in categorical.vars){
+  new.train.var <- make.names(train.data[[variable]])
+  transformed.train[[variable]] <- new.train.var
+  new.test.var <- make.names(test.data[[variable]])
+  transformed.test[[variable]] <- new.test.var
+}
+transformed.train <- to.factors(df=transformed.train, variables=categorical.vars)
+transformed.test <- to.factors(df=transformed.test, variables=categorical.vars)
+transformed.test.feature.vars <- transformed.test[,-7]
+transformed.test.class.var <- transformed.test[,7]
+
+# training data로 모델 만들기
+formula.init <- "left ~ ."
+formula.init <- as.formula(formula.init)
+nn.model <- train(formula.init, data = transformed.train, method="nnet")
+
+# 모델 확인
+print(nn.model)
+
+
+# 결과 예측하고 평가하기
+nn.predictions <- predict(nn.model, transformed.test.feature.vars, type="raw")
+confusionMatrix(data=nn.predictions, reference=transformed.test.class.var, 
+                positive="X1")
+
+
+# plot model evaluation metric curves
+nn.predictions <- predict(nn.model, transformed.test.feature.vars, type="prob")
+nn.prediction.values <- nn.predictions[,2]
+predictions <- prediction(nn.prediction.values, test.class.var)
+par(mfrow=c(1,2))
+plot.roc.curve(predictions, title.text="NN ROC Curve")
+plot.pr.curve(predictions, title.text="NN Precision/Recall Curve")
+
+
+# 특정 변수 선택하기
+formula.init <- "left ~ ."
+formula.init <- as.formula(formula.init)
+control <- trainControl(method="repeatedcv", number=10, repeats=2)
+model <- train(formula.init, data=transformed.train, method="nnet", 
+               trControl=control)
+importance <- varImp(model, scale=FALSE)
+plot(importance, cex.lab=0.5)
+
+## 상위 5개 선택
+
+
+# 선택된 변수로 새 모델 만들기
+formula.new <- "left ~ number_project + satisfaction_level + time_spend_company + promotion_last_5years +last_evaluation"
+formula.new <- as.formula(formula.new)
+nn.model.new <- train(formula.new, data=transformed.train, method="nnet")
+
+# 새 모델 결과 예측하고 평가하기
+nn.predictions.new <- predict(nn.model.new, transformed.test.feature.vars, type="raw")
+confusionMatrix(data=nn.predictions.new, reference=transformed.test.class.var, 
+                positive="X1")
+
+
+# view hyperparameter optimizations
+plot(nn.model.new, cex.lab=0.5)
+
+
+# plot model evaluation metric curves
+nn.model.best <- nn.model.new
+nn.predictions.best <- predict(nn.model.best, transformed.test.feature.vars, type="prob")
+nn.prediction.values <- nn.predictions.best[,2]
+predictions <- prediction(nn.prediction.values, test.class.var)
+par(mfrow=c(1,2))
+plot.roc.curve(predictions, title.text="NN ROC Curve")
+plot.pr.curve(predictions, title.text="NN Precision/Recall Curve")
+
+#===== rf model 시각화
+# 정오분류표 시각화
+library(ggplot2)
+test <- hr.df[indexes,]
+test$pred <- predict(rf.model.new, hr.df[indexes,]) #예측된 분류 입력하기
+ggplot(test, aes(left, pred, color = left)) + geom_jitter(width = 0.2, height = 0.1, size=2) +
+  labs(title="Confusion Matrix", subtitle="Predicted vs. Observed from HR dataset", y="Predicted", x="Truth")
+
+# 변수의 상대적 중요도 plot
+importance(rf.model.new)
+varImpPlot(rf.model.new)
+
+# satisfaction level을 100%했을 때 상대 크기 (정확도)
+rel.importance<-rf.model.new$importance[,3]/max(rf.model.new$importance[,3])*100
+rel.importance.dec<-sort(rel.importance, decreasing=T)
+barplot(rel.importance.dec,horiz=T,names=names(rel.importance.dec))
+
+# satisfaction level을 100%했을 때 상대 크기 (중요도)
+rel.importance<-rf.model.new$importance[,4]/max(rf.model.new$importance[,4])*100
+rel.importance.dec<-sort(rel.importance, decreasing=T)
+barplot(rel.importance.dec,horiz=T,names=names(rel.importance.dec))

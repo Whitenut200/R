@@ -1,0 +1,112 @@
+# 데이터 불러오기
+setwd("G:/내 드라이브/사회과학/과제 데이터")
+install.packages("Hmisc")
+library(Hmisc)
+work <- spss.get("G:/내 드라이브/사회과학/과제 데이터/1-5. 학업중단 청소년의 삶과 의식에 대한 종단조사_5차년도 데이터.sav
+                 use.value.labels=FALSE)
+
+# 변수 라벨링
+library(sjlabelled)
+work$sex<-work$SEX
+work$sex<-set_label(work$SEX, "성별")
+work$parttime<-work$T5.Q6
+work$parttime<-set_label(work$T5.Q6, "아르바이트 유무")
+work$nowstudy<-work$T5.Q1
+work$nowstudy<-set_label(work$T5.Q1, "현재 학업상태")
+work$future<-work$T5.Q12
+work$future <- set_label(work$T5.Q12, "미래진로에 대한 자신감")
+
+work$response.variable<-work$T5.Q15.1+work$T5.Q15.2+work$T5.Q15.3+work$T5.Q15.5+work$rT5.Q15.6+work$rT5.Q15.4
+work$response.variable<-set_label(work$response.variable, "학업중단에 대한 심리 상태")
+work$career.effort<-work$T5.Q9.1+work$T5.Q9.2+work$T5.Q9.4+work$T5.Q9.5
+work$career.effort<-set_label(work$career.effort, "진로결정에 대한 노력점수")
+work$career.anxiety<-work$T5.Q10.6+work$T5.Q10.7+work$T5.Q10.8+work$T5.Q10.9+work$T5.Q10.1+work$rT5.Q10.2+work$T5.Q10.3+work$T5.Q10.4+work$T5.Q10.5
+work$career.anxiety<-set_label(work$career.anxiety, "진로결정의 불안도")
+work$career.environment<-work$T5.Q10.10+work$T5.Q10.11+work$T5.Q10.12+work$T5.Q10.13
+work$career.environment<-set_label(work$career.environment, "진로결정환경점수")
+work$self.respect<-work$T5.Q18.1+work$T5.Q18.2+work$T5.Q18.3+work$T5.Q18.4+work$T5.Q18.5+work$T5.Q18.11+work$T5.Q18.12+work$T5.Q18.13
+work$self.respect<-set_label(work$self.respect, "자기긍정인식")
+work$melancho<-work$T5.Q19.2+work$T5.Q19.6+work$T5.Q19.3+work$T5.Q19.4+work$T5.Q19.5+work$T5.Q19.6+work$T5.Q19.7+work$T5.Q19.8+work$T5.Q19.9+work$T5.Q19.10
+work$melancho<-set_label(work$melancho, "우울")
+work$impulsive<-work$T5.Q19.12+work$T5.Q19.11+work$T5.Q19.13+work$T5.Q19.14+work$T5.Q19.15
+work$impulsive<-set_label(work$impulsive, "충동성")
+work$parental.indifference<-work$T5.Q22.2+work$rT5.Q22.1+work$T5.Q22.3+work$T5.Q22.4+work$T5.Q22.5
+work$parental.indifference<-set_label(work$parental.indifference, "부모(보호자)의 방임")
+work$parental.abuse<-work$T5.Q22.6+work$T5.Q22.7+work$T5.Q22.8+work$T5.Q22.9
+work$parental.abuse<-set_label(work$parental.abuse, "부모(보호자)의 학대")
+work$friend<-work$T5.Q24.1+work$T5.Q24.2+work$T5.Q24.3
+work$friend<-set_label(work$friend,"친구")
+work$live.environment<-work$T5.Q25.5+work$T5.Q25.6+work$T5.Q25.7+work$T5.Q25.8
+work$live.environment<-set_label(work$live.environment,"거주환경")
+work$value.grade<-work$T5.Q29.1+work$T5.Q29.2+work$T5.Q29.3
+work$value.grade<-set_label(work$value.grade,"학력")
+work$value.society<-work$T5.Q31.1+work$T5.Q31.2+work$T5.Q31.3+work$T5.Q31.4+work$T5.Q31.5
+work$value.society<-set_label(work$value.society,"사회")
+
+# 상관분석
+cor.var <- work[c("response.variable","career.effort","career.anxiety","career.environment","self.respect",
+                  "melancho","impulsive","parental.indifference","parental.abuse","friend","live.environment","value.grade","value.society")]
+namelist <- c("학업중단에 대한 심리 상태", "진로결정에 대한 노력점수","진로결정의 불안도","진로결정환경점수", "자기긍정인식","우울", "충동성", "부모(보호자)의 방임","부모(보호자)의 학대", "친구", "거주환경",
+              "학력", "사회") 
+colnames(cor.var)<- namelist 
+cor.varr=round(cor(cor.var, use="pairwise.complete.obs"),3)
+
+library(corrplot)
+corrplot(cor.varr, type="upper",order="hclust", tl.col="darkorange", tl.srt=45,
+         sig.level = 0.01, insig = "blank" ,p.mat=F )
+
+corrplot(cor.varr, type="upper",method="color", order="hclust", 
+         addCoef.col = "black", tl.srt=45,tl.col="darkorange",
+         sig.level = 0.01, insig = "blank", diag=FALSE )
+
+# 요인분석, 신뢰도분석
+mydata <- c("T5_Q31_3","T5_Q31_4","T5_Q31_5","T5_Q31_6","T5_Q15_1","T5_Q15_2","T5_Q15_3","T5_Q15_4","T5_Q15_5","T5_Q15_6"  )
+PCA1w   <- work[mydata]
+library(sjPlot)
+tab_pca(newdata1, title="진로결정", wrap.labels=20, show.cronb=TRUE,
+        show.var=TRUE, string.pov="분산비율", string.cpov="?????? 비율")
+newdata1 <- subset(work,
+                  select=c("T5.Q15.1","T5.Q15.2","T5.Q15.3","rT5.Q15.4","T5.Q15.5","rT5.Q15.6"))
+
+myvar <- c("T5.Q9.1","T5.Q9.2","T5.Q9.3","T5.Q9.4","T5.Q9.5")
+PCA1   <- work[myvar]
+PCA1_1 <- na.omit(PCA1)
+fit1  <- princomp(PCA1, cor=TRUE)
+summary(fit1)
+plot(fit1, type="lines")
+loadings(fit1)
+fit <- factanal(PCA1_1, 2, rotation="varimax")
+print(fit, digits=3, sort=TRUE)
+load <- fit$loadings[,1:2]
+plot(load)
+
+
+# 회귀분석
+regression<-lm(response.variable~career.effort+career.anxiety+career.environment+self.respect+
+                                 melancho+impulsive+parental.indifference+parental.abuse+
+                 friend+live.environment+value.grade+value.society+factor(sex)+factor(parttime)+factor(nowstudy)+future,date=work)
+regression2<-lm(response.variable~value.society+factor(nowstudy)+melancho)
+summary(regression2)   
+library(car)
+vif(regression2)
+
+spssdata.no.na <- na.omit(spssdata[c("self.esteem","sexw1.re","self.confidence",
+                                     "attachment","monitor","negative.parenting")])
+regression3 <- lm(self.esteem ~ sexw1.re+self.confidence+attachment+
+                    monitor+negative.parenting, data=spssdata.no.na)
+null <- lm(response.variable ~ 1)
+
+# 전진선택모형
+step1 <- step(null, scope=list(lower=null, upper=regression2), direction="forward")
+summary(step1)
+
+# 후진제거모형
+
+step2 <- step(regression2, direction="backward")
+summary(step2)
+
+# 선택제거방법
+
+step3 <- step(regression, direction="both")
+summary(step3)
+
